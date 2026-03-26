@@ -127,7 +127,7 @@ async function fetchSetIcon(setCode) {
 /* -------------------------------------------------
    2️⃣ When a set is chosen – load its cards + icon
    ------------------------------------------------- */
-setSelect.addEventListener("change", async e => {
+setSelect.addEventListener("change", async (e) => {
   const setCode = e.currentTarget.value;
   selectedCardId = null;
   removeDetailRow();
@@ -333,7 +333,7 @@ function selectCard(card) {
 /* -------------------------------------------------
    7️⃣ Event handling for table clicks
    ------------------------------------------------- */
-tbody.addEventListener("click", e => {
+tbody.addEventListener("click", (e) => {
   const tr = e.target.closest("tr[data-card-id]");
   if (tr) {
     const cardId = tr.dataset.cardId;
@@ -347,7 +347,7 @@ tbody.addEventListener("click", e => {
 /* -------------------------------------------------
    8️⃣ Variant input change handling
    ------------------------------------------------- */
-tbody.addEventListener("change", e => {
+tbody.addEventListener("change", (e) => {
   if (e.target.matches('input[data-variant]') && selectedCardId) {
     const variant = e.target.dataset.variant;
     const value = parseInt(e.target.value) || 0;
