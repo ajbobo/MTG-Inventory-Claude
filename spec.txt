@@ -10,7 +10,7 @@ When a card is selected, the card's front (and possibly back, if there is a back
 The card information should be shown inline with the selected row. It should collapse if the row is clicked on a second time. This will make sure that the card information and image is always on the screen.
 
 The user's collection can have multiple types of the same card (foil, prerelease, autographed). The user needs to be able to enter the number of each type.
-If the user has the card in any unusual formats (foil, prerelease, authgraphed) a star emoji will be shown next to the quantity value.
+If the user has the card in any unusual formats (foil, prerelease, autographed) a star emoji will be shown next to the quantity value.
 
 The list of sets, cards, and symbols will be read using the Scryfall API.
 To get an icon for a set, the set must be queried from Scryfall (https://api.scryfall.com/sets/<setcode>) and then its icon_svg_uri property should be read.
