@@ -17,6 +17,27 @@ MTG-Inventory is a web-based application (HTML5 and JavaScript) that helps users
 - If a card is selected in this field, then it is the only card shown in the table
 - There is a button next to the text field that is used to clear the field. This will also show all cards in the table again
 
+### Filters
+- Under the card search box, there are three dropdowns for filters:
+  - Rarity
+    - All
+    - Common
+    - Uncommon
+    - Rare
+    - Mythic
+  - Count
+    - All
+    - =0
+    - >=1
+    - >=4
+    - <4
+  - Price
+    - All
+    - >= $1.00
+    - >= $10.00
+- The user can select one option from each of the dropdowns, but can make selections from up to all three at once
+- The cards shown in the table will be the cards that match the selected filter(s)
+
 ### Card Display
 - Table showing all cards in the selected set with:
   - Card number

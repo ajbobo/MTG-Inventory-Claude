@@ -28,6 +28,31 @@
       </div>
     </div>
 
+    <!-- Filter controls -->
+    <div class="filter-controls" id="filterControls" style="display: none;">
+      <div class="filter-dropdowns">
+        <select id="filterRarity" class="filter-select">
+          <option value="all">All Rarities</option>
+          <option value="common">Common</option>
+          <option value="uncommon">Uncommon</option>
+          <option value="rare">Rare</option>
+          <option value="mythic">Mythic</option>
+        </select>
+        <select id="filterCount" class="filter-select">
+          <option value="all">All Counts</option>
+          <option value="eq0">=0</option>
+          <option value="ge1">>=1</option>
+          <option value="ge4">>=4</option>
+          <option value="lt4">&lt;4</option>
+        </select>
+        <select id="filterPrice" class="filter-select">
+          <option value="all">All Prices</option>
+          <option value="ge1">≥ $1.00</option>
+          <option value="ge10">≥ $10.00</option>
+        </select>
+      </div>
+    </div>
+
     <!-- Card list -->
     <div class="cards-section">
       <table id="cardsTable">

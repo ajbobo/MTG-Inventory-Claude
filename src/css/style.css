@@ -162,6 +162,28 @@ h1 {
   height: 32px;
 }
 
+/* Filter controls */
+.filter-controls {
+  display: none;
+  justify-content: center;
+  align-items: center;
+  margin: 0.5rem 0;
+}
+.filter-dropdowns {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.filter-select {
+  padding: 0.4rem;
+  font-size: 1rem;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+}
+
 /* Inline card detail row */
 .card-detail-row td {
   padding: 1rem;

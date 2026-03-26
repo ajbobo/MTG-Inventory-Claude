@@ -14,6 +14,10 @@ const searchControls = document.getElementById('searchControls');
 const cardSearchInput = document.getElementById('cardSearch');
 const clearSearchBtn = document.getElementById('clearSearch');
 const searchResultsDiv = document.getElementById('searchResults');
+const filterControls = document.getElementById('filterControls');
+const filterRaritySelect = document.getElementById('filterRarity');
+const filterCountSelect = document.getElementById('filterCount');
+const filterPriceSelect = document.getElementById('filterPrice');
 
 /* ---- State ---- */
 let cardsData = [];
@@ -25,6 +29,9 @@ let searchTerm = '';
 let searchResults = [];
 let searchSelection = null;
 let searchTimeout = null;
+let filterRarity = 'all';
+let filterCount = 'all';
+let filterPrice = 'all';
 
 /* ---- Symbol cache ---- */
 let symbolMap = {};
@@ -213,11 +220,21 @@ setSelect.addEventListener('change', async (e) => {
 
   if (!setCode) {
     searchControls.style.display = 'none';
+    filterControls.style.display = 'none';
     return;
   }
 
-  // Show search controls
+  // Show search and filter controls
   searchControls.style.display = 'flex';
+  filterControls.style.display = 'flex';
+
+  // Reset filters to defaults
+  filterRarity = 'all';
+  filterCount = 'all';
+  filterPrice = 'all';
+  filterRaritySelect.value = 'all';
+  filterCountSelect.value = 'all';
+  filterPriceSelect.value = 'all';
 
   const selectedOption = e.currentTarget.options[e.currentTarget.selectedIndex];
   if (!selectedOption) return;
@@ -239,7 +256,7 @@ setSelect.addEventListener('change', async (e) => {
     // Load quantities from backend
     await loadQuantitiesForCards(cards);
     // Render with quantities populated
-    renderCards(cards);
+    renderCards();
   }
   catch (err) {
     console.error('Failed to load cards:', err);
@@ -331,12 +348,56 @@ function renderSearchResults(results) {
   });
 }
 
+function getFilteredCards() {
+  // If a card is selected via search, show only that card
+  if (searchSelection) {
+    return [searchSelection];
+  }
+
+  let result = cardsData;
+
+  // Rarity filter
+  if (filterRarity !== 'all') {
+    result = result.filter(card => card.rarity === filterRarity);
+  }
+
+  // Count filter (total quantity)
+  if (filterCount !== 'all') {
+    result = result.filter(card => {
+      const qt = qtyMap[card.cardKey] || { normal: 0, foil: 0, prerelease: 0, autographed: 0 };
+      const total = qt.normal + qt.foil + qt.prerelease + qt.autographed;
+      switch (filterCount) {
+        case 'eq0': return total === 0;
+        case 'ge1': return total >= 1;
+        case 'ge4': return total >= 4;
+        case 'lt4': return total < 4;
+        default: return true;
+      }
+    });
+  }
+
+  // Price filter
+  if (filterPrice !== 'all') {
+    result = result.filter(card => {
+      const price = parseFloat(card.prices?.usd);
+      if (isNaN(price)) return false;
+      switch (filterPrice) {
+        case 'ge1': return price >= 1.00;
+        case 'ge10': return price >= 10.00;
+        default: return true;
+      }
+    });
+  }
+
+  return result;
+}
+
 function filterCardsBySelection(selectedCard) {
   searchSelection = selectedCard;
   cardSearchInput.value = selectedCard.mulename;
   searchResultsDiv.style.display = 'none';
   selectedCardId = selectedCard.cardKey;
-  renderCards([selectedCard]);
+  renderCards();
 
   // Show detail row
   removeDetailRow();
@@ -354,7 +415,7 @@ function clearSearch() {
   searchResultsDiv.innerHTML = '';
   selectedCardId = null;
   removeDetailRow();
-  renderCards(cardsData);
+  renderCards();
 }
 
 /* -------------------------------------------------
@@ -400,6 +461,11 @@ function computeTotal(qt) {
    3️⃣ Render the table rows
    ------------------------------------------------- */
 function renderCards(cards) {
+  // Use filtered cards if no cards array is explicitly provided
+  if (cards === undefined) {
+    cards = getFilteredCards();
+  }
+
   // Pre-fetch symbols if not already loaded
   if (Object.keys(symbolMap).length === 0) {
     fetchSymbols().then(() => renderCards(cards)); // re-render when symbols arrive
@@ -508,7 +574,7 @@ function selectCard(card) {
     // Toggle off
     removeDetailRow();
     selectedCardId = null;
-    renderCards(searchSelection ? [searchSelection] : cardsData); // remove highlight
+    renderCards(); // remove highlight
     return;
   }
 
@@ -516,10 +582,10 @@ function selectCard(card) {
   if (!qtyMap[card.cardKey]) {
     getCardQuantity(card.cardKey).then((qt) => {
       qtyMap[card.cardKey] = qt;
-      renderCards(searchSelection ? [searchSelection] : cardsData);
+      renderCards();
       // Now open detail row
       selectedCardId = card.cardKey;
-      renderCards(searchSelection ? [searchSelection] : cardsData);
+      renderCards();
       removeDetailRow();
       const parent = tbody;
       const row = parent.querySelector(`tr[data-card-key="${card.cardKey}"]`);
@@ -532,7 +598,7 @@ function selectCard(card) {
   }
 
   selectedCardId = card.cardKey;
-  renderCards(searchSelection ? [searchSelection] : cardsData); // update highlights
+  renderCards(); // update highlights
 
   // Remove any existing detail row and insert new one after the clicked row
   removeDetailRow();
@@ -673,6 +739,22 @@ document.addEventListener('click', (e) => {
   if (!searchControls.contains(e.target)) {
     searchResultsDiv.style.display = 'none';
   }
+});
+
+// Filter change handlers
+filterRaritySelect.addEventListener('change', (e) => {
+  filterRarity = e.target.value;
+  renderCards();
+});
+
+filterCountSelect.addEventListener('change', (e) => {
+  filterCount = e.target.value;
+  renderCards();
+});
+
+filterPriceSelect.addEventListener('change', (e) => {
+  filterPrice = e.target.value;
+  renderCards();
 });
 
 /* -------------------------------------------------
