@@ -2,7 +2,13 @@
   "permissions": {
     "allow": [
       "Skill(update-config)",
-      "Skill(claude-api)"
+      "Skill(claude-api)",
+      "Bash(curl -s -X POST http://localhost:3000/api/quantities -H \"Content-Type: application/json\" -d '{\"\"setId\"\":\"\"one\"\",\"\"collectorNumber\"\":\"\"216\"\",\"\"cardName\"\":\"\"Scryb Sprites\"\",\"\"quantities\"\":{\"\"normal\"\":1,\"\"foil\"\":2,\"\"prerelease\"\":0,\"\"autographed\"\":1}}')",
+      "Bash(curl -s http://localhost:3000/api/quantities/health)",
+      "Bash(ps -W)",
+      "Bash(node index.js)",
+      "Bash(curl -s http://localhost:3000/api/health)",
+      "Bash(curl -s http://localhost:3000/api/quantities/one:216)"
     ]
   }
 }

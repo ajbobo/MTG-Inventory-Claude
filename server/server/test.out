@@ -1,0 +1,16 @@
+node:internal/modules/cjs/loader:1222
+  throw err;
+  ^
+
+Error: Cannot find module 'C:\Dev\Misc\Claude-MTG-Inventory\server\server\index.js'
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1219:15)
+    at Module._load (node:internal/modules/cjs/loader:1045:27)
+    at TracingChannel.traceSync (node:diagnostics_channel:315:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:215:24)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:158:5)
+    at node:internal/main/run_main_module:30:49 {
+  code: 'MODULE_NOT_FOUND',
+  requireStack: []
+}
+
+Node.js v22.5.1

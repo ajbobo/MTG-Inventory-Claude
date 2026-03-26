@@ -32,8 +32,52 @@ MTG-Inventory is a web-based application (HTML5 and JavaScript) that helps users
 - Click again to collapse
 
 ### Data Persistence
-- User quantities saved to localStorage
-- Automatically loaded on page refresh
+- The User's collection is stored in Microsoft CosmosDB
+- The database name is MTG-Inventory
+- The container name is Collection
+- The database endpoint is https://mtg-inventory.documents.azure.com:443/
+- The database key is YOUR_COSMOS_KEY_HERE (store in environment variable)
+- Each document in the container is a record for a single card
+- When a card's inventory count is changed (cards are added or removed from the inventory) the database should be updated to reflect the new count
+- If a card's total count is reduced to 0, that card's document should be deleted from the database
+- Example document for a card:
+```json
+{
+    "Key": "2ed:216",
+    "CollectorNumber": "216",
+    "Name": "Scryb Sprites",
+    "SetCode": "2ed",
+    "TotalCount": 1,
+    "id": "2ed:216",
+    "CTCs": [
+        {
+            "CardType": "Standard",
+            "Count": 1
+        }
+    ],
+    "_rid": "8FhNAL+Di+YQAAAAAAAAAA==",
+    "_self": "dbs/8FhNAA==/colls/8FhNAL+Di+Y=/docs/8FhNAL+Di+YQAAAAAAAAAA==/",
+    "_etag": "\"7800f706-0000-0700-0000-652422f40000\"",
+    "_attachments": "attachments/",
+    "_ts": 1696867060
+}
+```
+- Important fields:
+  - Key - This is "<setCode>:<collectorNumber>"
+  - id - This is the same as the Key
+  - CollectorNumber - This is the collector number from Scryfall
+  - Name - This is the card's name, from Scryfall
+  - SetCode - This is the setcode that the card is in
+  - TotalCount - This is the total number of this card in the inventory. It is the sum of the CTC counts
+  - CTCs - Abbreviation for Card Type Counts; This is a list of the variants of the card that are in the list
+    - Each CTC has two values: Type and Count
+    - Type is one of the following:
+      - Standard - A normal card
+      - foil - A foiled card
+      - foil | prerelease - A Prerelease card, which is also foiled
+      - Autographed - A card with an authgraph on it
+    - Count is the number of that CTC (variant)
+
 
 ## Scryfall API Integration
 

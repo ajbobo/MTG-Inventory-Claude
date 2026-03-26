@@ -1,57 +1,113 @@
 /* -------------------------------------------------
-   MTG-Inventory – core logic
+   MTG-Inventory – core logic with CosmosDB backend
    ------------------------------------------------- */
 
-const API_ROOT = "https://api.scryfall.com";
+const API_ROOT = 'https://api.scryfall.com';
+const BACKEND_API = 'http://localhost:3000/api/quantities'; // Change as needed for production
 
 /* ---- UI ELEMENTS ---- */
-const setSelect = document.getElementById("setSelect");
-const setIconLeft = document.getElementById("setIconLeft");
-const setIconRight = document.getElementById("setIconRight");
-const tbody = document.querySelector("#cardsTable tbody");
+const setSelect = document.getElementById('setSelect');
+const setIconLeft = document.getElementById('setIconLeft');
+const setIconRight = document.getElementById('setIconRight');
+const tbody = document.querySelector('#cardsTable tbody');
 
 /* ---- State ---- */
 let cardsData = [];
 let qtyMap = {};
 let selectedCardId = null;
 let detailRow = null;
-const STORAGE_KEY = "mtg-inventory-quantities";
+let saveTimeout = null;
 
 /* ---- Symbol cache ---- */
 let symbolMap = {};
 
 /* -------------------------------------------------
-   Helper: load saved quantities from localStorage
+   Helper: Build composite card key from setCode and collector number
+   This is the identifier used in CosmosDB: "<setCode>:<collectorNumber>"
    ------------------------------------------------- */
-function loadQuantities() {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored) {
-    try {
-      const parsed = JSON.parse(stored);
-      Object.keys(parsed).forEach(cardId => {
-        const val = parsed[cardId];
-        if (typeof val === 'number') {
-          parsed[cardId] = { normal: val, foil: 0, prerelease: 0, autographed: 0 };
-        }
-        else if (typeof val === 'object' && val !== null) {
-          parsed[cardId] = {
-            normal: val.normal || 0,
-            foil: val.foil || 0,
-            prerelease: val.prerelease || 0,
-            autographed: val.autographed || 0
-          };
-        }
-      });
-      qtyMap = parsed;
+function buildCardKey(setCode, collectorNumber) {
+  return `${setCode}:${collectorNumber}`;
+}
+
+/* -------------------------------------------------
+   Helper: API call wrapper
+   ------------------------------------------------- */
+async function apiCall(url, options = {}) {
+  const resp = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers
     }
-    catch (e) {
-      console.error('Failed to parse stored quantities', e);
-      qtyMap = {};
-    }
+  });
+  if (!resp.ok) {
+    const error = await resp.json().catch(() => ({ error: `API error ${resp.status}` }));
+    throw new Error(error.error || `API error ${resp.status}`);
+  }
+  return resp.json();
+}
+
+/* -------------------------------------------------
+   Helper: fetch card quantities from backend
+   ------------------------------------------------- */
+async function getCardQuantity(cardKey) {
+  try {
+    const qt = await apiCall(`${BACKEND_API}/${encodeURIComponent(cardKey)}`);
+    return {
+      normal: qt.normal || 0,
+      foil: qt.foil || 0,
+      prerelease: qt.prerelease || 0,
+      autographed: qt.autographed || 0
+    };
+  }
+  catch (err) {
+    console.warn(`Could not load quantity for ${cardKey}:`, err.message);
+    return { normal: 0, foil: 0, prerelease: 0, autographed: 0 };
   }
 }
-function saveQuantities() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(qtyMap));
+
+async function saveCardQuantity(cardKey, cardName, cardSet, quantities) {
+  try {
+    const total = quantities.normal + quantities.foil + quantities.prerelease + quantities.autographed;
+
+    await apiCall(BACKEND_API, {
+      method: 'POST',
+      body: JSON.stringify({
+        setId: cardSet,
+        collectorNumber: cardKey.split(':')[1],
+        cardName: cardName,
+        quantities: quantities,
+      })
+    });
+
+    // If total is 0, delete the document from the database
+    if (total === 0) {
+      try {
+        await apiCall(`${BACKEND_API}/${encodeURIComponent(cardKey)}`, { method: 'DELETE' });
+      } catch (deleteErr) {
+        // Ignore 404 errors (already deleted)
+        if (!deleteErr.message.includes('404')) {
+          console.warn(`Failed to delete card ${cardKey}:`, deleteErr.message);
+        }
+      }
+    }
+  }
+  catch (err) {
+    console.error('Failed to save quantity:', err);
+    throw err;
+  }
+}
+
+/* -------------------------------------------------
+   Debounced save helper
+   ------------------------------------------------- */
+function scheduleSave(cardKey, cardName, cardSet, quantities) {
+  if (saveTimeout) {
+    clearTimeout(saveTimeout);
+  }
+  saveTimeout = setTimeout(() => {
+    saveCardQuantity(cardKey, cardName, cardSet, quantities);
+  }, 500);
 }
 
 /* -------------------------------------------------
@@ -72,7 +128,7 @@ async function fetchSymbols() {
   }
   try {
     const data = await fetchJSON(`${API_ROOT}/symbology`);
-    data.data.forEach(sym => {
+    data.data.forEach((sym) => {
       symbolMap[sym.symbol] = sym.svg_uri;
     });
   }
@@ -102,8 +158,8 @@ function renderManaCost(cost, symbols) {
 async function populateSets() {
   try {
     const sets = await fetchJSON(`${API_ROOT}/sets`);
-    sets.data.forEach(set => {
-      const opt = document.createElement("option");
+    sets.data.forEach((set) => {
+      const opt = document.createElement('option');
       opt.value = set.code;
       opt.textContent = set.name;
       setSelect.appendChild(opt);
@@ -132,7 +188,7 @@ async function fetchSetIcon(setCode) {
 /* -------------------------------------------------
    2️⃣ When a set is chosen – load its cards + icon
    ------------------------------------------------- */
-setSelect.addEventListener("change", async (e) => {
+setSelect.addEventListener('change', async (e) => {
   const setCode = e.currentTarget.value;
   selectedCardId = null;
   removeDetailRow();
@@ -158,6 +214,9 @@ setSelect.addEventListener("change", async (e) => {
   // Fetch cards for that set
   try {
     const cards = await fetchAllCards(setCode);
+    // Load quantities from backend
+    await loadQuantitiesForCards(cards);
+    // Render with quantities populated
     renderCards(cards);
   }
   catch (err) {
@@ -177,15 +236,18 @@ async function fetchAllCards(setCode) {
   while (url) {
     try {
       const r = await fetchJSON(url);
-      const cards = r.data.map(card => ({
+      const cards = r.data.map((card) => ({
         mulename: card.name,
         rarity: card.rarity,
         cost: card.mana_cost || "",
-        id: card.id,
+        // Use composite key: setCode:collector_number instead of Scryfall UUID
+        cardKey: buildCardKey(setCode, card.collector_number),
         images: card.image_uris,
         card_faces: card.card_faces || null,
-        foil: !!card.variants?.includes("foil"),
-        altArt: !!card.variants?.includes("alt-art"),
+        foil: !!card.variants?.includes('foil'),
+        altArt: !!card.variants?.includes('alt-art'),
+        setCode: setCode,
+        collectorNumber: card.collector_number,
         ...card
       }));
       allCards = [...allCards, ...cards];
@@ -201,11 +263,40 @@ async function fetchAllCards(setCode) {
 }
 
 /* -------------------------------------------------
+   Bulk fetch quantities for all cards in a set
+   ------------------------------------------------- */
+async function loadQuantitiesForCards(cards) {
+  const cardKeys = cards.map((card) => card.cardKey);
+  if (cardKeys.length === 0) return;
+
+  try {
+    const results = await apiCall(`${BACKEND_API}/bulk`, {
+      method: 'POST',
+      body: JSON.stringify({ cardKeys })
+    });
+
+    // Store all quantities in memory
+    cardKeys.forEach((key) => {
+      if (results[key]) {
+        qtyMap[key] = results[key];
+      }
+      else {
+        qtyMap[key] = { normal: 0, foil: 0, prerelease: 0, autographed: 0 };
+      }
+    });
+  }
+  catch (err) {
+    console.error('Failed to bulk load quantities:', err);
+    // Initialize all with zeros if API fails
+    cardKeys.forEach((key) => {
+      qtyMap[key] = qtyMap[key] || { normal: 0, foil: 0, prerelease: 0, autographed: 0 };
+    });
+  }
+}
+
+/* -------------------------------------------------
    Quantity helpers
    ------------------------------------------------- */
-function getCardQuantities(cardId) {
-  return qtyMap[cardId] || { normal: 0, foil: 0, prerelease: 0, autographed: 0 };
-}
 function computeTotal(qt) {
   return (qt.normal || 0) + (qt.foil || 0) + (qt.prerelease || 0) + (qt.autographed || 0);
 }
@@ -221,15 +312,15 @@ function renderCards(cards) {
     return;
   }
 
-  tbody.innerHTML = cards.map(card => {
-    const qt = getCardQuantities(card.id);
+  tbody.innerHTML = cards.map((card) => {
+    const qt = qtyMap[card.cardKey] || { normal: 0, foil: 0, prerelease: 0, autographed: 0 };
     const total = computeTotal(qt);
     const hasSpecial = qt.foil > 0 || qt.prerelease > 0 || qt.autographed > 0;
     const imgSrc = card.images?.normal || (card.card_faces?.[0]?.image_uris?.normal || '');
-    const selectedClass = selectedCardId === card.id ? 'selected' : '';
+    const selectedClass = selectedCardId === card.cardKey ? 'selected' : '';
     const costHtml = renderManaCost(card.cost, symbolMap);
     return `
-      <tr data-card-id="${card.id}" class="${selectedClass}">
+      <tr data-card-key="${card.cardKey}" class="${selectedClass}">
         <td class="number">${card.collector_number || ''}</td>
         <td>
           ${imgSrc ? `<img src="${imgSrc}" alt="${card.mulename}" style="height:24px;vertical-align:middle;">` : ''}
@@ -261,9 +352,9 @@ function removeDetailRow() {
 function createDetailRow(card) {
   const tr = document.createElement('tr');
   tr.className = 'card-detail-row';
-  tr.dataset.detailFor = card.id;
+  tr.dataset.detailFor = card.cardKey;
 
-  const qt = getCardQuantities(card.id);
+  const qt = qtyMap[card.cardKey] || { normal: 0, foil: 0, prerelease: 0, autographed: 0 };
   let frontUrl = '';
   let backUrl = '';
   if (card.card_faces && card.card_faces.length > 1) {
@@ -317,7 +408,7 @@ function createDetailRow(card) {
    6️⃣ Select a card to show details (toggle)
    ------------------------------------------------- */
 function selectCard(card) {
-  if (selectedCardId === card.id) {
+  if (selectedCardId === card.cardKey) {
     // Toggle off
     removeDetailRow();
     selectedCardId = null;
@@ -325,13 +416,32 @@ function selectCard(card) {
     return;
   }
 
-  selectedCardId = card.id;
+  // Load quantities from API if not already loaded
+  if (!qtyMap[card.cardKey]) {
+    getCardQuantity(card.cardKey).then((qt) => {
+      qtyMap[card.cardKey] = qt;
+      renderCards(cardsData);
+      // Now open detail row
+      selectedCardId = card.cardKey;
+      renderCards(cardsData);
+      removeDetailRow();
+      const parent = tbody;
+      const row = parent.querySelector(`tr[data-card-key="${card.cardKey}"]`);
+      if (row) {
+        detailRow = createDetailRow(card);
+        row.after(detailRow);
+      }
+    });
+    return;
+  }
+
+  selectedCardId = card.cardKey;
   renderCards(cardsData); // update highlights
 
   // Remove any existing detail row and insert new one after the clicked row
   removeDetailRow();
   const parent = tbody;
-  const row = parent.querySelector(`tr[data-card-id="${card.id}"]`);
+  const row = parent.querySelector(`tr[data-card-key="${card.cardKey}"]`);
   if (row) {
     detailRow = createDetailRow(card);
     row.after(detailRow);
@@ -341,11 +451,11 @@ function selectCard(card) {
 /* -------------------------------------------------
    7️⃣ Event handling for table clicks
    ------------------------------------------------- */
-tbody.addEventListener("click", (e) => {
-  const tr = e.target.closest("tr[data-card-id]");
+tbody.addEventListener('click', (e) => {
+  const tr = e.target.closest('tr[data-card-key]');
   if (tr) {
-    const cardId = tr.dataset.cardId;
-    const card = cardsData.find(c => c.id === cardId);
+    const cardKey = tr.dataset.cardKey;
+    const card = cardsData.find((c) => c.cardKey === cardKey);
     if (card) {
       selectCard(card);
     }
@@ -355,28 +465,35 @@ tbody.addEventListener("click", (e) => {
 /* -------------------------------------------------
    8️⃣ Variant input change handling
    ------------------------------------------------- */
-tbody.addEventListener("change", (e) => {
+tbody.addEventListener('change', (e) => {
   if (e.target.matches('input[data-variant]') && selectedCardId) {
     const variant = e.target.dataset.variant;
     const value = parseInt(e.target.value) || 0;
+
     if (!qtyMap[selectedCardId]) {
       qtyMap[selectedCardId] = { normal: 0, foil: 0, prerelease: 0, autographed: 0 };
     }
     qtyMap[selectedCardId][variant] = value;
-    saveQuantities();
 
-    const qt = getCardQuantities(selectedCardId);
-    const total = computeTotal(qt);
+    const total = computeTotal(qtyMap[selectedCardId]);
 
     // Update the total in the detail row
     const totalEl = detailRow?.querySelector('.total-info strong');
     if (totalEl) totalEl.textContent = total;
 
     // Update the table row quantity cell
-    const row = tbody.querySelector(`tr[data-card-id="${selectedCardId}"]`);
+    const row = tbody.querySelector(`tr[data-card-key="${selectedCardId}"]`);
     if (row) {
-      const hasSpecial = qt.foil > 0 || qt.prerelease > 0 || qt.autographed > 0;
+      const hasSpecial = qtyMap[selectedCardId].foil > 0 ||
+                        qtyMap[selectedCardId].prerelease > 0 ||
+                        qtyMap[selectedCardId].autographed > 0;
       row.querySelector('.qty').textContent = `${total}${hasSpecial ? '🌟' : ''}`;
+    }
+
+    // Get card metadata for API call
+    const card = cardsData.find(c => c.cardKey === selectedCardId);
+    if (card) {
+      scheduleSave(selectedCardId, card.mulename, card.setCode, qtyMap[selectedCardId]);
     }
   }
 });
@@ -384,5 +501,5 @@ tbody.addEventListener("change", (e) => {
 /* -------------------------------------------------
    9️⃣ Initial load
    ------------------------------------------------- */
-loadQuantities();
+// No need to load quantities explicitly - they'll be fetched on-demand when cards are displayed
 populateSets();
