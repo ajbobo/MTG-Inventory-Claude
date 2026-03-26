@@ -32,7 +32,8 @@ function loadQuantities() {
         const val = parsed[cardId];
         if (typeof val === 'number') {
           parsed[cardId] = { normal: val, foil: 0, prerelease: 0, autographed: 0 };
-        } else if (typeof val === 'object' && val !== null) {
+        }
+        else if (typeof val === 'object' && val !== null) {
           parsed[cardId] = {
             normal: val.normal || 0,
             foil: val.foil || 0,
@@ -42,7 +43,8 @@ function loadQuantities() {
         }
       });
       qtyMap = parsed;
-    } catch (e) {
+    }
+    catch (e) {
       console.error('Failed to parse stored quantities', e);
       qtyMap = {};
     }
@@ -73,7 +75,8 @@ async function fetchSymbols() {
     data.data.forEach(sym => {
       symbolMap[sym.symbol] = sym.svg_uri;
     });
-  } catch (err) {
+  }
+  catch (err) {
     console.error('Failed to fetch symbology:', err);
   }
   return symbolMap;
@@ -105,7 +108,8 @@ async function populateSets() {
       opt.textContent = set.name;
       setSelect.appendChild(opt);
     });
-  } catch (err) {
+  }
+  catch (err) {
     console.error('Failed to load sets:', err);
     alert('Could not load MTG sets. Please check your internet connection.');
   }
@@ -118,7 +122,8 @@ async function fetchSetIcon(setCode) {
   try {
     const setData = await fetchJSON(`${API_ROOT}/sets/${setCode}`);
     return setData.icon_svg_uri;
-  } catch (err) {
+  }
+  catch (err) {
     console.error('Failed to fetch set icon:', err);
     return null;
   }
@@ -154,7 +159,8 @@ setSelect.addEventListener("change", async (e) => {
   try {
     const cards = await fetchAllCards(setCode);
     renderCards(cards);
-  } catch (err) {
+  }
+  catch (err) {
     console.error('Failed to load cards:', err);
     alert('Failed to load cards for that set.');
     tbody.innerHTML = "";
@@ -184,7 +190,8 @@ async function fetchAllCards(setCode) {
       }));
       allCards = [...allCards, ...cards];
       url = r.next_page; // This will be null when no more pages
-    } catch (err) {
+    }
+    catch (err) {
       console.error('Error fetching cards page:', err);
       break;
     }
@@ -262,7 +269,8 @@ function createDetailRow(card) {
   if (card.card_faces && card.card_faces.length > 1) {
     frontUrl = card.card_faces[0].image_uris?.normal || '';
     backUrl = card.card_faces[1].image_uris?.normal || '';
-  } else {
+  }
+  else {
     frontUrl = card.images?.normal || '';
     backUrl = '';
   }
