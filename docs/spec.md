@@ -11,6 +11,12 @@ MTG-Inventory is a web-based application (HTML5 and JavaScript) that helps users
 - Centered at the top of the screen
 - Set icon appears on both left and right when a set is selected
 
+### Card search
+- Under the dropdown, and before the table, there is a text field for searching
+- As the user types the name of the card in the field, a list of possible cards is shown until there is only 1 card left. The user can press Tab to select that card
+- If a card is selected in this field, then it is the only card shown in the table
+- There is a button next to the text field that is used to clear the field. This will also show all cards in the table again
+
 ### Card Display
 - Table showing all cards in the selected set with:
   - Card number

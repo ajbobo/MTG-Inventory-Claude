@@ -10,6 +10,10 @@ const setSelect = document.getElementById('setSelect');
 const setIconLeft = document.getElementById('setIconLeft');
 const setIconRight = document.getElementById('setIconRight');
 const tbody = document.querySelector('#cardsTable tbody');
+const searchControls = document.getElementById('searchControls');
+const cardSearchInput = document.getElementById('cardSearch');
+const clearSearchBtn = document.getElementById('clearSearch');
+const searchResultsDiv = document.getElementById('searchResults');
 
 /* ---- State ---- */
 let cardsData = [];
@@ -17,6 +21,10 @@ let qtyMap = {};
 let selectedCardId = null;
 let detailRow = null;
 let saveTimeout = null;
+let searchTerm = '';
+let searchResults = [];
+let searchSelection = null;
+let searchTimeout = null;
 
 /* ---- Symbol cache ---- */
 let symbolMap = {};
@@ -196,7 +204,20 @@ setSelect.addEventListener('change', async (e) => {
   setIconLeft.innerHTML = "";
   setIconRight.innerHTML = "";
 
-  if (!setCode) return;
+  // Clear search state
+  searchSelection = null;
+  searchTerm = '';
+  cardSearchInput.value = '';
+  searchResultsDiv.innerHTML = '';
+  searchResultsDiv.style.display = 'none';
+
+  if (!setCode) {
+    searchControls.style.display = 'none';
+    return;
+  }
+
+  // Show search controls
+  searchControls.style.display = 'flex';
 
   const selectedOption = e.currentTarget.options[e.currentTarget.selectedIndex];
   if (!selectedOption) return;
@@ -214,6 +235,7 @@ setSelect.addEventListener('change', async (e) => {
   // Fetch cards for that set
   try {
     const cards = await fetchAllCards(setCode);
+    cardsData = cards; // Store full set for later restoration
     // Load quantities from backend
     await loadQuantitiesForCards(cards);
     // Render with quantities populated
@@ -263,6 +285,79 @@ async function fetchAllCards(setCode) {
 }
 
 /* -------------------------------------------------
+   Search suggestion functions
+   ------------------------------------------------- */
+function filterCardsBySearch(query) {
+  if (!query.trim()) return cardsData;
+
+  const lowerQuery = query.toLowerCase();
+  return cardsData.filter(card =>
+    card.mulename.toLowerCase().includes(lowerQuery)
+  ).slice(0, 10);
+}
+
+function renderSearchResults(results) {
+  searchResultsDiv.innerHTML = '';
+  searchResults = results;
+
+  if (results.length === 0) {
+    const noResults = document.createElement('div');
+    noResults.className = 'search-result-item';
+    noResults.textContent = 'No cards found';
+    noResults.style.cursor = 'default';
+    searchResultsDiv.appendChild(noResults);
+    return;
+  }
+
+  results.forEach((card, index) => {
+    const item = document.createElement('div');
+    item.className = 'search-result-item';
+    item.dataset.index = index;
+    item.dataset.cardKey = card.cardKey;
+
+    const imgSrc = card.images?.normal || (card.card_faces?.[0]?.image_uris?.normal || '');
+    if (imgSrc) {
+      const img = document.createElement('img');
+      img.src = imgSrc;
+      img.alt = card.mulename;
+      item.appendChild(img);
+    }
+
+    const nameSpan = document.createElement('span');
+    nameSpan.textContent = card.mulename;
+    item.appendChild(nameSpan);
+
+    searchResultsDiv.appendChild(item);
+  });
+}
+
+function filterCardsBySelection(selectedCard) {
+  searchSelection = selectedCard;
+  cardSearchInput.value = selectedCard.mulename;
+  searchResultsDiv.style.display = 'none';
+  selectedCardId = selectedCard.cardKey;
+  renderCards([selectedCard]);
+
+  // Show detail row
+  removeDetailRow();
+  const row = tbody.querySelector(`tr[data-card-key="${selectedCard.cardKey}"]`);
+  if (row) {
+    detailRow = createDetailRow(selectedCard);
+    row.after(detailRow);
+  }
+}
+
+function clearSearch() {
+  searchSelection = null;
+  cardSearchInput.value = '';
+  searchResultsDiv.style.display = 'none';
+  searchResultsDiv.innerHTML = '';
+  selectedCardId = null;
+  removeDetailRow();
+  renderCards(cardsData);
+}
+
+/* -------------------------------------------------
    Bulk fetch quantities for all cards in a set
    ------------------------------------------------- */
 async function loadQuantitiesForCards(cards) {
@@ -305,7 +400,6 @@ function computeTotal(qt) {
    3️⃣ Render the table rows
    ------------------------------------------------- */
 function renderCards(cards) {
-  cardsData = cards;
   // Pre-fetch symbols if not already loaded
   if (Object.keys(symbolMap).length === 0) {
     fetchSymbols().then(() => renderCards(cards)); // re-render when symbols arrive
@@ -414,7 +508,7 @@ function selectCard(card) {
     // Toggle off
     removeDetailRow();
     selectedCardId = null;
-    renderCards(cardsData); // remove highlight
+    renderCards(searchSelection ? [searchSelection] : cardsData); // remove highlight
     return;
   }
 
@@ -422,10 +516,10 @@ function selectCard(card) {
   if (!qtyMap[card.cardKey]) {
     getCardQuantity(card.cardKey).then((qt) => {
       qtyMap[card.cardKey] = qt;
-      renderCards(cardsData);
+      renderCards(searchSelection ? [searchSelection] : cardsData);
       // Now open detail row
       selectedCardId = card.cardKey;
-      renderCards(cardsData);
+      renderCards(searchSelection ? [searchSelection] : cardsData);
       removeDetailRow();
       const parent = tbody;
       const row = parent.querySelector(`tr[data-card-key="${card.cardKey}"]`);
@@ -438,7 +532,7 @@ function selectCard(card) {
   }
 
   selectedCardId = card.cardKey;
-  renderCards(cardsData); // update highlights
+  renderCards(searchSelection ? [searchSelection] : cardsData); // update highlights
 
   // Remove any existing detail row and insert new one after the clicked row
   removeDetailRow();
@@ -497,6 +591,87 @@ tbody.addEventListener('change', (e) => {
     if (card) {
       scheduleSave(selectedCardId, card.mulename, card.setCode, qtyMap[selectedCardId]);
     }
+  }
+});
+
+// Card search input handler (debounced)
+cardSearchInput.addEventListener('input', () => {
+  clearTimeout(searchTimeout);
+  const query = cardSearchInput.value.trim();
+  searchTerm = query;
+
+  if (query.length === 0) {
+    searchResultsDiv.style.display = 'none';
+    searchResults = [];
+    // If user clears input, also clear selection
+    if (searchSelection) {
+      clearSearch();
+    }
+    return;
+  }
+
+  searchTimeout = setTimeout(() => {
+    if (cardsData.length === 0) {
+      searchResultsDiv.innerHTML = '<div class="search-result-item">Please select a set first</div>';
+      searchResultsDiv.style.display = 'block';
+      return;
+    }
+
+    const results = filterCardsBySearch(query);
+    renderSearchResults(results);
+    searchResultsDiv.style.display = results.length > 0 ? 'block' : 'none';
+  }, 300);
+});
+
+// Card search keydown handler
+cardSearchInput.addEventListener('keydown', (e) => {
+  const items = searchResultsDiv.querySelectorAll('.search-result-item');
+  if (items.length === 0) return;
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    const current = searchResultsDiv.querySelector('.selected');
+    const next = current ? current.nextElementSibling : items[0];
+    if (next) {
+      if (current) current.classList.remove('selected');
+      next.classList.add('selected');
+    }
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    const current = searchResultsDiv.querySelector('.selected');
+    const prev = current ? current.previousElementSibling : items[items.length - 1];
+    if (prev) {
+      if (current) current.classList.remove('selected');
+      prev.classList.add('selected');
+    }
+  } else if ((e.key === 'Tab' && !e.shiftKey) || e.key === 'Enter') {
+    e.preventDefault();
+    const selected = searchResultsDiv.querySelector('.selected') || items[0];
+    if (selected && selected.dataset.cardKey) {
+      const card = searchResults.find(c => c.cardKey === selected.dataset.cardKey);
+      if (card) filterCardsBySelection(card);
+    }
+  } else if (e.key === 'Escape') {
+    clearSearch();
+  }
+});
+
+// Search result click handler
+searchResultsDiv.addEventListener('click', (e) => {
+  const item = e.target.closest('.search-result-item');
+  if (item && item.dataset.cardKey) {
+    const card = searchResults.find(c => c.cardKey === item.dataset.cardKey);
+    if (card) filterCardsBySelection(card);
+  }
+});
+
+// Clear search button
+clearSearchBtn.addEventListener('click', clearSearch);
+
+// Close search dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  if (!searchControls.contains(e.target)) {
+    searchResultsDiv.style.display = 'none';
   }
 });
 

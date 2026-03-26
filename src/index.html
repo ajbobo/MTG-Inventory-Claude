@@ -8,8 +8,6 @@
 </head>
 <body>
   <main>
-    <h1>MTG Inventory</h1>
-
     <!-- Set selector -->
     <div class="controls">
       <div class="set-select-wrapper">
@@ -18,6 +16,15 @@
           <option value="">-- Choose a set --</option>
         </select>
         <span class="set-icon-right" id="setIconRight"></span>
+      </div>
+    </div>
+
+    <!-- Card search -->
+    <div class="search-controls" id="searchControls" style="display: none;">
+      <div class="search-wrapper">
+        <input type="text" id="cardSearch" placeholder="Search cards by name..." autocomplete="off">
+        <button type="button" id="clearSearch" title="Clear search">&times;</button>
+        <div class="search-results" id="searchResults"></div>
       </div>
     </div>
 
