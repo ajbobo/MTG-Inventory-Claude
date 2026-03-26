@@ -1,0 +1,20 @@
+MTG-Inventory
+
+MTG-Inventory is a web-based (HTML5 and Typescript) app that will organize the user's collection of Magic: The Gathering (MTG) cards.
+
+The main UI will include a dropdown list of all of the MTG sets that have been published. The dropdown list should be shown at the top of the screen, and should be centered.
+When a set is selected, the icon for that set will appear to the left and right of the dropdown list.
+When a set is selected, a list of all of the cards in that set will be shown in a table.
+The table will include the card's number, name, rarity, casting cost (using appropriate symbols), price, and quantity. The quantity shown will be total number of all types of the specific card.
+When a card is selected, the card's front (and possibly back, if there is a back image) will be shown along with the number of each type of the card that the user has in their collection.
+The card information should be shown inline with the selected row. It should collapse if the row is clicked on a second time. This will make sure that the card information and image is always on the screen.
+
+The user's collection can have multiple types of the same card (foil, prerelease, autographed). The user needs to be able to enter the number of each type.
+If the user has the card in any unusual formats (foil, prerelease, authgraphed) a star emoji will be shown next to the quantity value.
+
+The list of sets, cards, and symbols will be read using the Scryfall API.
+To get an icon for a set, the set must be queried from Scryfall (https://api.scryfall.com/sets/<setcode>) and then its icon_svg_uri property should be read.
+To get the list of cards for a set, use this Scryfall endpoint: https://api.scryfall.com/cards/search?q=set:<setcode>&order=set
+The results from teh /cards/search endpoint has a field called "next_page". This should be used if it is included in the results. That way all of the cards will be loaded.
+Scryfall has an endpoint that returns a list of URLs for symbols. https://api.scryfall.com/symbology This URL should be used to get images that are used in the Cost column.
+A single mana cost may be composed of multiple symbols. For example "{3}{W}" would have a symbol for {3} and another for {W}

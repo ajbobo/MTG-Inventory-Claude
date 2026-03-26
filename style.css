@@ -1,0 +1,155 @@
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background: #fafafa;
+  color: #222;
+  margin: 0;
+  padding: 2rem;
+}
+main {
+  max-width: 960px;
+  margin: 0 auto;
+}
+h1 {
+  text-align: center;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+.set-select-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.set-icon-left, .set-icon-right {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.set-icon-left img, .set-icon-right img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+#setSelect {
+  padding: 0.4rem;
+  font-size: 1rem;
+}
+
+.cards-section {
+  margin-top: 1rem;
+}
+#cardsTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+#cardsTable th,
+#cardsTable td {
+  padding: 0.5rem;
+  border: 1px solid #bbb;
+  text-align: left;
+  vertical-align: middle;
+}
+#cardsTable th.number,
+#cardsTable td.number {
+  width: 60px;
+  text-align: center;
+}
+#cardsTable th.casting-cost,
+#cardsTable td.casting-cost {
+  width: 120px;
+}
+#cardsTable th.cmc,
+#cardsTable td.cmc {
+  width: 40px;
+  text-align: center;
+}
+#cardsTable th.qty,
+#cardsTable td.qty {
+  width: 60px;
+  text-align: center;
+}
+#cardsTable th {
+  background: #e0e0e0;
+}
+#cardsTable tr.selected {
+  background-color: #e0f0ff;
+}
+#cardsTable tr:hover {
+  background-color: #f5f5f5;
+  cursor: pointer;
+}
+
+.mana-symbol {
+  height: 20px;
+  vertical-align: middle;
+}
+
+/* Inline card detail row */
+.card-detail-row td {
+  padding: 1rem;
+  background: #f9f9f9;
+  border-top: 2px solid #ddd;
+}
+.detail-content {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+.detail-images {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.detail-card-image {
+  max-width: 150px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #fff;
+}
+.detail-variants {
+  flex: 1;
+}
+.detail-variants h4 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+}
+.variant-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+.variant-row label {
+  width: 100px;
+  font-weight: bold;
+}
+.variant-row input[type="number"] {
+  width: 60px;
+  padding: 0.2rem;
+}
+.variant-emoji {
+  font-size: 1.2rem;
+}
+.total-info {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #eee;
+  font-size: 1.1rem;
+}
+
+@media (max-width: 600px) {
+  .detail-content {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .detail-card-image {
+    max-width: 120px;
+  }
+}
