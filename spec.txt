@@ -18,3 +18,31 @@ To get the list of cards for a set, use this Scryfall endpoint: https://api.scry
 The results from teh /cards/search endpoint has a field called "next_page". This should be used if it is included in the results. That way all of the cards will be loaded.
 Scryfall has an endpoint that returns a list of URLs for symbols. https://api.scryfall.com/symbology This URL should be used to get images that are used in the Cost column.
 A single mana cost may be composed of multiple symbols. For example "{3}{W}" would have a symbol for {3} and another for {W}
+When the /symbology endpoint is called, the return data is in this format:
+{
+  "object": "list",
+  "has_more": false,
+  "data": [
+    {
+      "object": "card_symbol",
+      "symbol": "{T}",
+      "svg_uri": "https://svgs.scryfall.io/card-symbols/T.svg",
+      "loose_variant": null,
+      "english": "tap this permanent",
+      "transposable": false,
+      "represents_mana": false,
+      "appears_in_mana_costs": false,
+      "mana_value": 0,
+      "hybrid": false,
+      "phyrexian": false,
+      "cmc": 0,
+      "funny": false,
+      "colors": [],
+      "gatherer_alternates": [
+        "ocT",
+        "oT"
+      ]
+    }
+  ]
+}
+For each symbol, the svg_uri property should be used to the get the image URL
