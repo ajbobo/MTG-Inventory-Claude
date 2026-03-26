@@ -10,6 +10,9 @@ MTG-Inventory is a web-based application (HTML5 and JavaScript) that helps users
 - Dropdown list showing all published MTG sets
 - Centered at the top of the screen
 - Set icon appears on both left and right when a set is selected
+- Each entry in the dropdown should include the following:
+  - The set's name (ex: Dominaria)
+  - THe set's 3-letter code (ex: (dom))
 
 ### Card search
 - Under the dropdown, and before the table, there is a text field for searching

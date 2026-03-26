@@ -198,7 +198,7 @@ async function populateSets() {
       .forEach((set) => {
         const opt = document.createElement('option');
         opt.value = set.code;
-        opt.textContent = set.name;
+        opt.textContent = `${set.name} (${set.code})`;
         setSelect.appendChild(opt);
       });
   }
