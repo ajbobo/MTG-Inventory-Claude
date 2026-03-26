@@ -61,6 +61,11 @@ h1 {
   width: 60px;
   text-align: center;
 }
+#cardsTable th.rarity,
+#cardsTable td.rarity {
+  width: 50px;
+  text-align: center;
+}
 #cardsTable th.casting-cost,
 #cardsTable td.casting-cost {
   width: 120px;
@@ -88,6 +93,12 @@ h1 {
 
 .mana-symbol {
   height: 20px;
+  vertical-align: middle;
+}
+
+/* Rarity images */
+#cardsTable td.rarity img {
+  height: 24px;
   vertical-align: middle;
 }
 

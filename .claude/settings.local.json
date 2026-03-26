@@ -8,7 +8,8 @@
       "Bash(ps -W)",
       "Bash(node index.js)",
       "Bash(curl -s http://localhost:3000/api/health)",
-      "Bash(curl -s http://localhost:3000/api/quantities/one:216)"
+      "Bash(curl -s http://localhost:3000/api/quantities/one:216)",
+      "Bash(find . -type f \\\\\\(-name *.ts -o -name *.js -o -name *.mjs \\\\\\) -not -path */node_modules/* -not -name *.map -exec wc -l {} +)"
     ]
   }
 }

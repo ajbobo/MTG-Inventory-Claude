@@ -322,15 +322,17 @@ function renderCards(cards) {
     return `
       <tr data-card-key="${card.cardKey}" class="${selectedClass}">
         <td class="number">${card.collector_number || ''}</td>
+        <td class="rarity">
+          <img src="assets/${card.rarity}.png" alt="${card.rarity}" title="${card.rarity}">
+        </td>
         <td>
           ${imgSrc ? `<img src="${imgSrc}" alt="${card.mulename}" style="height:24px;vertical-align:middle;">` : ''}
           <strong>${card.mulename}</strong>
         </td>
-        <td class="rarity">${card.rarity}</td>
         <td class="casting-cost">${costHtml}</td>
-        <td class="price">${card.prices?.usd || '-'}</td>
+        <td class="price">${card.prices?.usd && parseFloat(card.prices.usd) > 1 ? `<strong>${card.prices.usd}</strong>` : card.prices?.usd || '-'}</td>
         <td class="qty">
-          ${total}${hasSpecial ? '🌟' : ''}
+          ${total > 0 ? `<strong>${total}</strong>` : total}${hasSpecial ? '🌟' : ''}
         </td>
       </tr>`;
   }).join('');
@@ -367,7 +369,7 @@ function createDetailRow(card) {
   }
 
   tr.innerHTML = `
-    <td colspan="4">
+    <td colspan="6">
       <div class="detail-content">
         <div class="detail-images">
           <img src="${frontUrl}" alt="${card.mulename} front" class="detail-card-image">
