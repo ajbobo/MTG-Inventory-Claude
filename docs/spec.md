@@ -155,6 +155,18 @@ Response format:
 ```
 For each symbol, use the `svg_uri` property to get the image URL.
 
+### Collectable Sets
+- Not all of Scryfall's set types should be listed in the set dropdown
+- The type is in a field called set_type
+- The following set types should be considered collectable and put in the dropdown:
+  - core
+  - expansion
+  - masterpiece
+  - masters
+  - commander
+  - draft_innovation
+  - funny (but only if there is no block and parent defined)
+
 ## Implementation Notes
 
 - Mana cost strings (e.g., "{3}{W}{W}") are composed of multiple symbols

@@ -45,6 +45,26 @@ function buildCardKey(setCode, collectorNumber) {
 }
 
 /* -------------------------------------------------
+   Helper: Determine if a set is collectable
+   Only shows core, expansion, masterpiece, masters, commander, draft_innovation,
+   and funny sets without a block or parent
+   ------------------------------------------------- */
+function isCollectableSet(set) {
+  const collectableTypes = ['core', 'expansion', 'masterpiece', 'masters', 'commander', 'draft_innovation'];
+
+  if (collectableTypes.includes(set.set_type)) {
+    return true;
+  }
+
+  // Special handling for funny sets: only include if no block and no parent
+  if (set.set_type === 'funny') {
+    return !set.block && !set.parent;
+  }
+
+  return false;
+}
+
+/* -------------------------------------------------
    Helper: API call wrapper
    ------------------------------------------------- */
 async function apiCall(url, options = {}) {
@@ -173,12 +193,14 @@ function renderManaCost(cost, symbols) {
 async function populateSets() {
   try {
     const sets = await fetchJSON(`${API_ROOT}/sets`);
-    sets.data.forEach((set) => {
-      const opt = document.createElement('option');
-      opt.value = set.code;
-      opt.textContent = set.name;
-      setSelect.appendChild(opt);
-    });
+    sets.data
+      .filter(isCollectableSet)
+      .forEach((set) => {
+        const opt = document.createElement('option');
+        opt.value = set.code;
+        opt.textContent = set.name;
+        setSelect.appendChild(opt);
+      });
   }
   catch (err) {
     console.error('Failed to load sets:', err);
