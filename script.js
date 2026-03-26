@@ -65,11 +65,13 @@ async function fetchJSON(url, opts = {}) {
    Helper: fetch and cache mana symbols
    ------------------------------------------------- */
 async function fetchSymbols() {
-  if (Object.keys(symbolMap).length > 0) return symbolMap;
+  if (Object.keys(symbolMap).length > 0) {
+    return symbolMap;
+  }
   try {
     const data = await fetchJSON(`${API_ROOT}/symbology`);
     data.data.forEach(sym => {
-      symbolMap[sym._symbol] = sym.image_uris?.svg || sym.image_uris?.png;
+      symbolMap[sym.symbol] = sym.svg_uri;
     });
   } catch (err) {
     console.error('Failed to fetch symbology:', err);
