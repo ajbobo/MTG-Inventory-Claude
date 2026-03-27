@@ -12,7 +12,7 @@ MTG-Inventory is a web-based application (HTML5 and JavaScript) that helps users
 - Set icon appears on both left and right when a set is selected
 - Each entry in the dropdown should include the following:
   - The set's name (ex: Dominaria)
-  - THe set's 3-letter code (ex: (dom))
+  - The set's 3-letter code (ex: (dom))
 
 ### Card search
 - Under the dropdown, and before the table, there is a text field for searching
@@ -119,7 +119,7 @@ Use the `icon_svg_uri` property from the response.
 
 ### Get Cards in Set
 ```
-GET https://api.scryfall.com/cards/search?q=set:<setcode>&order=set
+GET https://api.scryfall.com/cards/search?q=set:<setcode> and game:paper&order=set&unique=prints
 ```
 Handle pagination using the `next_page` field to load all cards.
 
