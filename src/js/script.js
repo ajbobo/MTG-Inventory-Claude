@@ -291,7 +291,7 @@ setSelect.addEventListener('change', async (e) => {
    2a️⃣ Fetch all cards in a given set (with pagination)
    ------------------------------------------------- */
 async function fetchAllCards(setCode) {
-  let url = `${API_ROOT}/cards/search?q=set:${setCode}&order=set`;
+  let url = `${API_ROOT}/cards/search?q=set:${setCode}%20and%20game:paper&order=set&unique=prints`;
   let allCards = [];
 
   while (url) {
